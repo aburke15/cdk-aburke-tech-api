@@ -3,6 +3,8 @@ import { Code, IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct, Node } from 'constructs';
 import * as Options from './common/options';
+import * as DDB from 'aws-cdk-lib/aws-dynamodb';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 
 export class PortfolioConstruct extends Construct {
   // private members that can be shared across functions
@@ -15,16 +17,23 @@ export class PortfolioConstruct extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const getPortfolioProjectsFunction: IFunction = new NodejsFunction(this, 'GetPortfolioProjectsFunction', {
+    // pull in the github repo table arn from secrets manager
+    const tableSecret = Secret.fromSecretNameV2(this, 'GitHubRepoTableNameSecret', 'GitHubRepoTableName');
+    const tableArn = tableSecret?.secretValue?.unsafeUnwrap()?.toString();
+    const table = DDB.Table.fromTableArn(this, 'ApiGitHubRepoTable', tableArn);
+
+    this.GetPortfolioProjectsFunction = new NodejsFunction(this, 'GetPortfolioProjectsFunction', {
       runtime: Runtime.NODEJS_14_X,
       memorySize: this.memorySize,
       timeout: this.timeout,
       entry: Code.fromAsset(Options.AssetDirectory).path + '/get-portfolio-projects-function.ts',
       handler: Options.HandlerName,
       bundling: Options.BundlingOptions,
-      environment: {},
+      environment: {
+        TABLE_NAME: table.tableName,
+      },
     });
 
-    this.GetPortfolioProjectsFunction = getPortfolioProjectsFunction;
+    table.grantReadData(this.GetPortfolioProjectsFunction);
   }
 }

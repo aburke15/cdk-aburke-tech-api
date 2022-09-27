@@ -1,7 +1,8 @@
 import { Duration } from 'aws-cdk-lib';
-import { Code, IFunction } from 'aws-cdk-lib/aws-lambda';
+import { Code, IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
+import * as Options from './common/options';
 
 export class CloudResumeConstruct extends Construct {
   // private members to be used across funcs in this class
@@ -9,17 +10,36 @@ export class CloudResumeConstruct extends Construct {
   private readonly timeout: Duration = Duration.seconds(30);
 
   // expose this function to be referenced outside of this class
-  public readonly GetPageVisitCountFunction: IFunction;
+  public readonly GetIncrementedPageVisitCount: IFunction;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const getPageVisitCountFunction: IFunction = new NodejsFunction(this, 'GetPageVisitCountFunction', {
+    const getPageVistCountFunction: IFunction = new NodejsFunction(this, 'GetPageVisitCountFunction', {
+      runtime: Runtime.NODEJS_14_X,
       memorySize: this.memorySize,
       timeout: this.timeout,
-      entry: Code.fromAsset('').path + '/get-page-visit-count-function.ts',
+      entry: Code.fromAsset(Options.AssetDirectory).path + '/get-page-visit-count-function.ts',
+      handler: Options.HandlerName,
+      bundling: Options.BundlingOptions,
+      environment: {
+        // table name
+      },
     });
 
-    this.GetPageVisitCountFunction = getPageVisitCountFunction;
+    this.GetIncrementedPageVisitCount = new NodejsFunction(this, 'IncrementPageVisitCountFunction', {
+      runtime: Runtime.NODEJS_14_X,
+      memorySize: this.memorySize,
+      timeout: this.timeout,
+      entry: Code.fromAsset(Options.AssetDirectory).path + '/increment-page-visit-count-function.ts',
+      handler: Options.HandlerName,
+      bundling: Options.BundlingOptions,
+      environment: {
+        // table name
+        // downstream function name
+      },
+    });
+
+    getPageVistCountFunction.grantInvoke(this.GetIncrementedPageVisitCount);
   }
 }

@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk';
 import { APIGatewayEvent } from 'aws-lambda';
 import * as Options from '../lib/common/options';
+import { GitHubProject } from '../lib/common/types';
 
 AWS.config.update(Options.DefaultRegion);
 
@@ -21,15 +22,19 @@ exports.hander = async (event: APIGatewayEvent) => {
     }
 
     const data = await getProjects(ddb);
+    const projects = toGitHubProjects(data?.Items);
 
     return {
       statusCode: 200,
       headers: headers,
-      body: JSON.stringify(data.Items, null, 2),
+      body: JSON.stringify(projects, null, 2),
     };
   } catch (error) {
     console.error(JSON.stringify(error, null, 2));
-    throw error;
+
+    return {
+      statusCode: 400,
+    };
   }
 };
 
@@ -40,4 +45,24 @@ const getProjects = (ddb: AWS.DynamoDB) => {
   };
 
   return ddb.scan(params).promise();
+};
+
+const toGitHubProjects = (itemList?: AWS.DynamoDB.ItemList): GitHubProject[] => {
+  let projects: GitHubProject[] = [];
+  if (!itemList) {
+    return projects;
+  }
+
+  itemList.forEach((item) => {
+    projects.push({
+      id: item.id.S,
+      name: item.name.S,
+      createdAt: item.createdAt.S,
+      description: item.description.S,
+      htmlUrl: item.htmlUrl.S,
+      language: item.language.S,
+    } as GitHubProject);
+  });
+
+  return projects;
 };

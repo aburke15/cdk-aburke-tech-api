@@ -18,7 +18,7 @@ export class PortfolioConstruct extends Construct {
     super(scope, id);
 
     // pull in the github repo table arn from secrets manager
-    const tableSecret = Secret.fromSecretNameV2(this, 'GitHubRepoTableNameSecret', 'GitHubRepoTableName');
+    const tableSecret = Secret.fromSecretNameV2(this, 'ApiGitHubRepoTableArnSecret', 'ApiGitHubRepoTableArn');
     const tableArn = tableSecret?.secretValue?.unsafeUnwrap()?.toString();
     const table = DDB.Table.fromTableArn(this, 'ApiGitHubRepoTable', tableArn);
 

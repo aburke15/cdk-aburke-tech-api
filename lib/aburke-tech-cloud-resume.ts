@@ -4,7 +4,7 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as Options from './common/options';
 
-export class CloudResumeConstruct extends Construct {
+export class AburkeTechCloudResume extends Construct {
   // private members to be used across funcs in this class
   private readonly memorySize: number = 128;
   private readonly timeout: Duration = Duration.seconds(30);

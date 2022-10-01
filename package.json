@@ -1,8 +1,8 @@
 {
-  "name": "cdk-api-aburke-tech",
+  "name": "cdk-aburke-tech-api",
   "version": "0.1.0",
   "bin": {
-    "cdk-api-aburke-tech": "bin/cdk-api-aburke-tech.js"
+    "cdk-aburke-tech-api": "bin/cdk-aburke-tech-api.js"
   },
   "scripts": {
     "build": "tsc",

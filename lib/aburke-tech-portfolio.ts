@@ -1,5 +1,5 @@
 import { Duration } from 'aws-cdk-lib';
-import { Code, IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as Options from './common/options';
@@ -12,25 +12,25 @@ export class AburkeTechPortfolio extends Construct {
   private readonly timeout: Duration = Duration.seconds(30);
 
   // public exposed functions to be added to the api gateway
-  public readonly GetPortfolioProjectsFunction: IFunction;
+  public readonly GetPortfolioProjectsFunction: NodejsFunction;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
     // pull in the github repo table arn from secrets manager
-    const tableSecret = Secret.fromSecretNameV2(this, 'GitHubRepoTableArnSecret', 'GitHubRepoTableArn');
-    const tableArn = tableSecret?.secretValue?.unsafeUnwrap()?.toString();
-    const table = DDB.Table.fromTableArn(this, 'GitHubRepoTable', tableArn);
+    const tableSecret = Secret.fromSecretNameV2(this, 'GitHubRepoTableNameSecret', 'GitHubRepoTableName');
+    const tableName = tableSecret?.secretValue?.unsafeUnwrap()?.toString();
+    const table = DDB.Table.fromTableName(this, 'GitHubRepoTable', tableName);
 
     this.GetPortfolioProjectsFunction = new NodejsFunction(this, 'GetPortfolioProjectsFunction', {
       runtime: Runtime.NODEJS_14_X,
       memorySize: this.memorySize,
       timeout: this.timeout,
-      entry: Code.fromAsset(Options.AssetDirectory).path + '/get-portfolio-projects-function.ts',
       handler: Options.HandlerName,
+      entry: Code.fromAsset(Options.AssetDirectory).path + '/get-portfolio-projects-function.ts',
       bundling: Options.BundlingOptions,
       environment: {
-        TABLE_NAME: table.tableName,
+        TABLE_NAME: tableName,
       },
     });
 

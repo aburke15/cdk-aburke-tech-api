@@ -1,5 +1,4 @@
 import { RestApi } from 'aws-cdk-lib/aws-apigateway';
-import { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { AburkeTechApiDomain } from './aburke-tech-api-domain';
 import { AburkeTechApiEndpoints } from './aburke-tech-api-endpoints';

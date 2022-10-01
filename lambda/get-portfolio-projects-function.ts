@@ -13,7 +13,7 @@ const headers = {
   'Access-Control-Allow-Methods': 'GET',
 } as const;
 
-exports.hander = async (event: APIGatewayEvent) => {
+exports.handler = async (event: APIGatewayEvent) => {
   console.info(JSON.stringify(event, null, 2));
 
   try {

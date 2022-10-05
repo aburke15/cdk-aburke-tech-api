@@ -1,7 +1,9 @@
 import { Duration } from 'aws-cdk-lib';
 import { Code, IFunction, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import * as DDB from 'aws-cdk-lib/aws-dynamodb';
 import * as Options from './common/options';
 
 export class AburkeTechCloudResume extends Construct {
@@ -10,10 +12,13 @@ export class AburkeTechCloudResume extends Construct {
   private readonly timeout: Duration = Duration.seconds(30);
 
   // expose this function to be referenced outside of this class
-  public readonly GetIncrementedPageVisitCount: IFunction;
+  public readonly GetIncrementedPageVisitCount: NodejsFunction;
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
+
+    const table: DDB.ITable = this.getDynamoDBTable();
+    const tableName: string = table.tableName;
 
     const getPageVistCountFunction: IFunction = new NodejsFunction(this, 'GetPageVisitCountFunction', {
       runtime: Runtime.NODEJS_14_X,
@@ -23,7 +28,7 @@ export class AburkeTechCloudResume extends Construct {
       handler: Options.HandlerName,
       bundling: Options.BundlingOptions,
       environment: {
-        // table name
+        TABLE_NAME: tableName,
       },
     });
 
@@ -35,11 +40,24 @@ export class AburkeTechCloudResume extends Construct {
       handler: Options.HandlerName,
       bundling: Options.BundlingOptions,
       environment: {
-        // table name
-        // downstream function name
+        TABLE_NAME: tableName,
+        DOWNSTREAM_FUNCTION_NAME: getPageVistCountFunction.functionName,
       },
     });
 
     getPageVistCountFunction.grantInvoke(this.GetIncrementedPageVisitCount);
+    table.grantReadData(getPageVistCountFunction);
+    table.grantReadWriteData(this.GetIncrementedPageVisitCount);
+  }
+
+  private getDynamoDBTable(): DDB.ITable {
+    // get table name secret
+    const tableNameSecret = Secret.fromSecretNameV2(this, '', '');
+    // get table by table name
+    const tableName = tableNameSecret?.secretValue?.unsafeUnwrap()?.toString();
+    // return table name
+    const table = DDB.Table.fromTableName(this, '', tableName);
+
+    return table;
   }
 }
